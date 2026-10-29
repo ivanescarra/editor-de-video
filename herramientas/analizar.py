@@ -10,7 +10,8 @@ import time
 from pathlib import Path
 
 HERRAMIENTAS = Path(__file__).resolve().parent
-MODELO_WHISPER = "mlx-community/whisper-large-v3-mlx"
+sys.path.insert(0, str(HERRAMIENTAS))
+import motor  # noqa: E402
 
 
 def paso(msg):
@@ -48,23 +49,13 @@ def main():
 
     # 2. Silero: tramos con voz
     paso("Busco los tramos con voz (Silero)")
-    import wave
-
-    import numpy as np
-    import torch
-    from silero_vad import get_speech_timestamps, load_silero_vad
-    modelo = load_silero_vad()
-    with wave.open(str(audio)) as f:
-        wav = torch.from_numpy(np.frombuffer(f.readframes(f.getnframes()), dtype=np.int16).astype(np.float32) / 32768)
-    tramos = get_speech_timestamps(wav, modelo, sampling_rate=16000, return_seconds=True,
-                                   min_silence_duration_ms=250, speech_pad_ms=60)
+    tramos = motor.tramos_voz(audio)
     (trabajo / "voz.json").write_text(json.dumps(
         [{"inicio": round(t["start"], 3), "fin": round(t["end"], 3)} for t in tramos], indent=1))
 
     # 3. Whisper: cada palabra con su segundo, por trozos cortos según los tramos con voz.
     # En una pasada larga Whisper se salta los «eh» y las repeticiones; por trozos los escribe.
-    paso("Transcribo palabra a palabra (Whisper large-v3)")
-    import mlx_whisper
+    paso(f"Transcribo palabra a palabra ({motor.descripcion()})")
     trozos = []
     for t in tramos:
         if trozos and t["end"] - trozos[-1][0] <= 25:
@@ -77,9 +68,7 @@ def main():
         ini, fin = max(0, ini - 0.3), fin + 0.3
         subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-ss", f"{ini:.3f}", "-to", f"{fin:.3f}",
                         "-i", str(audio), str(pieza)], check=True)
-        res = mlx_whisper.transcribe(str(pieza), path_or_hf_repo=MODELO_WHISPER, language="es",
-                                     word_timestamps=True, condition_on_previous_text=False,
-                                     initial_prompt="Eh, em, mmm, o sea, bueno, eh.")
+        res = motor.transcribir(pieza, pista="Eh, em, mmm, o sea, bueno, eh.")
         textos.append(res["text"].strip())
         for seg in res["segments"]:
             for p in seg.get("words", []):

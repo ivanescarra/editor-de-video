@@ -6,7 +6,8 @@ Este repositorio edita vídeos hablados a cámara (vertical 1080×1920, Instagra
 
 ## Qué hay
 
-- `herramientas/analizar.py` — audio → Whisper large-v3 (mlx, palabra a palabra) + Silero (voz) + Apple Vision (caras).
+- `herramientas/analizar.py` — audio → Whisper palabra a palabra + Silero (voz) + Apple Vision (caras).
+- `herramientas/motor.py` — elige el motor de voz según el Mac: chip Apple = mlx-whisper large-v3 + Silero/torch; Mac Intel = faster-whisper en CPU (modelo `medium`, cambiable con `MODELO_WHISPER_CPU`) + Silero ONNX, sin torch. Se puede forzar con `MOTOR=apple|cpu`. En Intel la transcripción es más lenta y menos precisa: desconfía más de las palabras sueltas y comprueba los cortes con la energía del audio.
 - `herramientas/montar.py` — receta → cortes, Remotion (subtítulos, titular, tarjetas, escenas), mezcla de audio −14 LUFS.
 - `herramientas/revisar_cortes.py`, `hoja.py` — verificación de empalmes y hojas de fotogramas.
 - `herramientas/caras`, `silueta` — binarios Swift (Apple Vision) que `instalar.sh` compila. Solo Mac.

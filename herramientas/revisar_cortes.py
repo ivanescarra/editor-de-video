@@ -32,7 +32,7 @@ import numpy as np  # noqa: E402
 umbral = float(np.percentile(db, 10)) + 15
 voz = float(np.percentile(db, 50))
 
-import mlx_whisper  # noqa: E402
+import motor  # noqa: E402
 
 
 def limpia(t):
@@ -63,8 +63,7 @@ with tempfile.TemporaryDirectory() as tmp:
                   f"[x][y]concat=n=2:v=0:a=1,atempo={vel}[o]")
         subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(trabajo / "audio.wav"), "-filter_complex",
                         filtro, "-map", "[o]", str(wav)], check=True, stdin=subprocess.DEVNULL)
-        oido = mlx_whisper.transcribe(str(wav), path_or_hf_repo="mlx-community/whisper-large-v3-mlx",
-                                      language="es")["text"].strip()  # sin pista: con ella se inventa «eh» en las pausas
+        oido = motor.transcribir(wav)["text"].strip()  # sin pista: con ella se inventa «eh» en las pausas
         quiero = " ".join(esperadas(a1, b1) + esperadas(a2, b2))
         parecido = difflib.SequenceMatcher(None, limpia(quiero), limpia(oido)).ratio()
         dudoso = brusco or parecido < 0.8
